@@ -1,0 +1,4 @@
+Doplněk umožňuje jednoduché vytváření diskuzních fór. Názory pak lze jednoduše přidávat, reagovat na již existující a vypisovat vybrané nebo rovnou všechny názory. To vše se dvěma databázovými tabulkami a minimem vlastního kódu.
+
+Copyright (c) 2011 Radek Dostál
+GNU Lesser General Public License

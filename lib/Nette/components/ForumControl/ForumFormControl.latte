@@ -1,0 +1,103 @@
+{**
+ * Šablona pro komponentu ForumControl
+ *
+ * @package   Nette\Extras\ForumControl
+ * @version   $Id: ForumControlModel.latte,v 1.0.0 2011/04/12 09:35:26 dostal Exp $
+ * @author    Ing. Radek Dostál <radek.dostal@gmail.com>
+ * @copyright Copyright (c) 2011 Radek Dostál
+ * @license   GNU Lesser General Public License
+ * @link      http://www.radekdostal.cz
+ *
+ * @param int $forumTopicsCount celkový počet názorů
+ * @param DibiRow $forumReplyTo objekt názoru, na který se reaguje
+ * @param bool $forumShowForm příznak zobrazení formuláře pro vložení názoru / reakci na názor
+ * @param bool $forumShowAll příznak pro zobrazení všech názorů
+ * @param bool $forumSelectedTopics příznak pro zobrazení vybraných názorů
+ * @param array $forumThreads array pole všech názorů
+ * @param NAppForm $forumTopicsForm formulář pro zobrazení všech názorů v seznamu s checkboxy
+ *}
+
+<div n:if="$forumReplyTo && !$forumShowAll && !$forumSelectedTopics" class="forumControl-topic">
+  <table class="forumControl-reply">
+    <tbody>
+      <tr>
+        <td><strong>{$forumReplyTo->name}</strong></td>
+        <td align="right">{$forumReplyTo->date_time|timeAgoInWords}</td>
+      </tr>
+      <tr>
+        <td colspan="2"><strong>{$forumReplyTo->title}</strong></td>
+      </tr>
+      <tr>
+        <td colspan="2">{!$forumReplyTo->topic|escapeHtml|nl2br}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{if $forumShowForm}
+{control forumForm}
+{/if}
+<div n:if="$forumSelectedTopics" id="forumControl-expanded">
+  <div n:foreach="$forumSelectedTopics as $forumTopic" class="forumControl-topic">
+    <table class="forumControl-reply">
+      <tbody>
+        <tr>
+          <td><strong>{$forumTopic->name}</strong></td>
+          <td align="right">{$forumTopic->date_time|timeAgoInWords}</td>
+        </tr>
+        <tr>
+          <td colspan="2"><strong><a href="{plink this, $forumTopic->id_thread, NULL}" title="Reagovat na názor">{$forumTopic->title}</a></strong></td>
+        </tr>
+        <tr>
+          <td colspan="2">{!$forumTopic->topic|escapeHtml|nl2br}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div n:if="$forumShowAll && !$forumSelectedTopics" id="forumControl-expanded">
+  {foreach $forumThreads as $forumTopic}
+    {var $forumIndent => 17 * log(3 + $forumTopic->depth) - 18}
+    {var $forumSmallIndent => 485 - $forumIndent}
+  <div class="forumControl-topic" style="margin-left: {!$forumIndent}pt; width: {!$forumSmallIndent}pt">
+    <table class="forumControl-reply">
+      <tbody>
+        <tr>
+          <td><strong>{$forumTopic->name}</strong></td>
+          <td align="right">{$forumTopic->date_time|timeAgoInWords}</td>
+        </tr>
+        <tr>
+          <td colspan="2"><strong><a href="{plink this, $forumTopic->id_thread, NULL}" title="Reagovat na názor">{$forumTopic->title}</a></strong></td>
+        </tr>
+        <tr>
+          <td colspan="2">{!$forumTopic->topic|escapeHtml|nl2br}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  {/foreach}
+</div>
+{$forumTopicsForm->render('errors')}
+{$forumTopicsForm->render('begin')}
+<div id="forumControl-topics-header">Přehled názorů ({$forumTopicsCount})</div>
+<div id="forumControl-topics">
+  <table width="100%">
+    <tbody>
+      <tr n:foreach="$forumTopicsForm[$forumSelectedTopicsIds]->controls as $forumTopic">
+        {var $forumIndent => 17 * log(3 + $forumThreads[$iterator->counter - 1]->depth) - 18}
+        <td width="1">{$forumTopic->control}</td>
+        <td><span style="margin-left: {!$forumIndent}pt"><strong><a href="{plink this, $forumThreads[$iterator->counter - 1]->id_thread, NULL}" title="Reagovat na názor">{$forumThreads[$iterator->counter - 1]->title}</a></strong></span></td>
+        <td nowrap="nowrap">{$forumThreads[$iterator->counter - 1]->name}</td>
+        <td nowrap="nowrap" width="120">{$forumThreads[$iterator->counter - 1]->cz_date_time}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div id="forumControl-topics-footer">
+  <div class="left">
+    {$forumTopicsForm['show']->control}
+  </div>
+  <div class="right">
+    <a href="{plink this, 0, NULL}">Přidat názor</a>&nbsp;&nbsp;&nbsp;<a href="{plink this, 0, 1}">Zobrazit vše</a>
+  </div>
+</div>
+{$forumTopicsForm->render('end')}

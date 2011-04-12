@@ -1,0 +1,177 @@
+body
+{
+  margin: 0;
+  padding: 10px;
+  font: 0.75em/1.3 'Verdana', 'Arial', 'Helvetica', 'sans-serif';
+  color: #000000;
+  background-color: #FFFFFF;
+}
+
+h1
+{
+  margin: 0px 0px 10px 0px;
+  font: 2em 'Trebuchet MS', 'Georgia', 'Times New Roman', 'Times', 'serif';
+  font-weight: normal;
+  color: #006AEB;
+}
+
+a
+{
+  color: #006AEB;
+}
+
+a:hover
+{
+  background: none;
+}
+
+div.flash
+ul.error
+{
+  line-height: 1.3;
+}
+
+ul.error,
+div.error
+{
+  background: #FAD3C4 url('../img/error.gif') no-repeat 5px center;
+  border: 1px solid #D2B994;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding-top: 10px;
+  padding-left: 75px;
+}
+
+ul.error
+{
+  padding: 10px 10px 10px 70px;
+}
+
+div.error
+{
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+div.info
+{
+  background: #F1F5FB url('../img/info.gif') no-repeat 5px center;
+  border: 1px solid #BAD7F8;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding-top: 20px;
+  padding-left: 60px;
+  padding-bottom: 20px;
+}
+
+table
+{
+  font-size: 11px;
+  border-collapse: collapse;
+  margin: 10px 0px 10px 0px;
+}
+
+fieldset
+{
+  padding: 8px;
+  width: 630px;
+  border: 1px solid #959595;
+}
+
+legend
+{
+  color: #000000;
+  padding: 0px 5px 5px 5px;
+}
+
+input,
+textarea
+{
+  font: 11px 'Verdana', 'Arial', 'Helvetica', 'sans-serif';
+}
+
+/* Forum Control */
+div#forumControl-expanded
+{
+  width: 648px;
+  margin-bottom: 20px;
+  padding-top: 2px;
+  padding-left: 4px;
+  padding-bottom: 2px;
+}
+
+div#forumControl-topics-header
+{
+  width: 621px;
+  background-color: #F7F7F7;
+  margin-top: 20px;
+  padding: 5px;
+  border: 1px solid #D0D1D3;
+  font-weight: bold;
+}
+
+div#forumControl-topics
+{
+  width: 650px;
+  overflow-y: scroll;
+  height: 213px;
+  border-left: 1px solid #D0D1D3;
+}
+
+div#forumControl-topics table
+{
+  margin: 0px;
+  border-left: 1px solid #FFFFFF;
+}
+
+div#forumControl-topics-footer
+{
+  width: 621px;
+  height: 25px;
+  background-color: #F7F7F7;
+  margin-bottom: 20px;
+  padding: 5px;
+  border: 1px solid #D0D1D3;
+  font-weight: bold;
+}
+
+div#forumControl-topics-footer div.left
+{
+  float: left;
+  padding-top: 2px;
+}
+
+div#forumControl-topics-footer div.right
+{
+  float: right;
+  margin-top: 4px;
+  margin-right: 5px;
+}
+
+div.forumControl-topic
+{
+  width: 485pt;
+  border: 1px solid #D0D1D3;
+  border-top: 3px solid #D0D1D3;
+  margin-bottom: 10px;
+}
+
+table.forumControl-reply
+{
+  width: 100%;
+  margin: 0px;
+}
+
+table.forumControl-reply td
+{
+  border: none;
+  padding: 3px;
+}
+
+/* Zvýraznění neplatných odkazů */
+a[href^="error:"]
+{
+  background: red;
+  color: white;
+  text-decoration: blink;
+}

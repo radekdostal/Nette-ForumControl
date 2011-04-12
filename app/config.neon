@@ -1,0 +1,26 @@
+common:
+  php: # PHP configuration
+    date.timezone: Europe/Prague
+    session.save_path: "%tempDir%/sessions"
+    # zlib.output_compression: yes
+    # default_charset: "UTF-8"
+
+  service:
+    Nette\Loaders\RobotLoader:
+      option:
+        directory: [%appDir%, %libsDir%/dibi, %libsDir%/Nette/components]
+      run: TRUE
+
+production < common:
+  database:
+    driver: mysql
+    host: localhost
+    username: root
+    password:
+    database: forum_control
+    charset: utf8
+    lazy: TRUE
+
+development < production:
+  database:
+    profiler: TRUE
