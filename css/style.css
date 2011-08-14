@@ -168,7 +168,6 @@ table.forumControl-reply td
   padding: 3px;
 }
 
-/* Zvýraznění neplatných odkazů */
 a[href^="error:"]
 {
   background: red;

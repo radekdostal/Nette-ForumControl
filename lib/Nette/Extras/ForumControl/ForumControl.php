@@ -2,29 +2,41 @@
  /**
   * Forum Control
   *
-  * TODO zachovávat případné existující parametry v URL při tvorbě odkazů
-  *
   * @package   Nette\Extras\ForumControl
-  * @example   http://nettephp.com/extras/forumcontrol
-  * @version   $Id: ForumControl.php,v 1.0.0 2011/04/11 12:00:22 dostal Exp $
+  * @example   http://addons.nette.org/forumcontrol
+  * @version   $Id: ForumControl.php,v 1.1.0 2011/08/14 08:36:22 dostal Exp $
   * @author    Ing. Radek Dostál <radek.dostal@gmail.com>
   * @copyright Copyright (c) 2011 Radek Dostál
   * @license   GNU Lesser General Public License
   * @link      http://www.radekdostal.cz
   */
 
- class ForumControl extends NControl
+ namespace Nette\Extras\ForumControl;
+
+ use Nette\Application\UI;
+
+ class ForumControl extends UI\Control
  {
    /**#@+
-    * Upozornění
+    * Alerts
     *
     * @ignore
+    * @since 1.0.0
     */
-   const EXCEPTION_MESSAGE = 'Došlo k chybě při inicializaci diskuzního fóra.';
+   const EXCEPTION_MESSAGE = 'An error occurred while discussion forum initialization.';
    /**#@- */
 
    /**
-    * Objekt modelu
+    * Global container
+    *
+    * @access private
+    * @var Nette\DI\Container
+    * @since 1.0.0
+    */
+   private $context;
+
+   /**
+    * Instance of model
     *
     * @access protected
     * @var IForumControlModel
@@ -33,7 +45,7 @@
    protected $model;
 
    /**
-    * Parametry fóra pro mapování uživatelských parametrů na parametry fóra
+    * Params for mapping user params to forum params
     *
     * @access protected
     * @var array
@@ -42,7 +54,7 @@
    protected $forumParams;
 
    /**
-    * Vlákna s příspěvky
+    * Threads with topics
     *
     * @access protected
     * @var array
@@ -51,7 +63,7 @@
    protected $forumThreads;
 
    /**
-    * ID příspěvku, na který se reaguje
+    * Topic ID to reply
     *
     * @access protected
     * @var int
@@ -60,7 +72,7 @@
    protected $forumTopicId;
 
    /**
-    * Příznak pro zobrazení všech příspěvků
+    * Show all topics?
     *
     * @access protected
     * @var bool
@@ -69,7 +81,7 @@
    protected $forumAllTopics;
 
    /**
-    * ID příspěvků, které se mají zobrazit
+    * Topic ID's to show
     *
     * @access protected
     * @var array
@@ -78,20 +90,22 @@
    protected $forumSelectedTopicsIds;
 
    /**
-    * Inicializace
+    * Initialization
     *
     * @access public
-    * @param IForumControlModel $model objekt modelu
-    * @param array $params parametry fóra
+    * @param Nette\DI\Container $context global context
+    * @param IForumControlModel $model instance of model
+    * @param array $params forum params
     * @throws ForumControlException
     * @return void
     * @uses ForumControlModel::getThreads()
     * @since 1.0.0
     */
-   public function __construct(IForumControlModel $model, array $params)
+   public function __construct(\Nette\DI\Container $context, IForumControlModel $model, array $params)
    {
      parent::__construct();
 
+     $this->context = $context;
      $this->model = $model;
      $this->forumParams = $params;
 
@@ -99,17 +113,17 @@
      {
        $this->forumThreads = $this->model->getThreads();
      }
-     catch (DibiException $e)
+     catch (\DibiException $e)
      {
        throw new ForumControlException(self::EXCEPTION_MESSAGE);
      }
    }
 
    /**
-    * Formulář pro přidání názoru do diskuzního fóra
+    * Form to add topic
     *
     * @access protected
-    * @return NAppForm
+    * @return Nette\Application\UI\Form
     * @uses setForumParams()
     * @since 1.0.0
     */
@@ -117,40 +131,40 @@
    {
      $this->setForumParams();
 
-     $form = new NAppForm();
+     $form = new UI\Form();
 
-     $form->addGroup(!$this->forumTopicId ? 'Názor' : 'Reakce na názor');
+     $form->addGroup(!$this->forumTopicId ? 'Topic' : 'Reply to topic');
 
-     $form->addText('name', 'Jméno:', 50, 40)
-          ->addRule(NForm::FILLED, 'Jméno musí být vyplněno.');
+     $form->addText('name', 'Name:', 50, 40)
+          ->addRule($form::FILLED, 'Name must be filled.');
 
      if (!$this->forumTopicId)
      {
-       $form->addText('title', 'Titulek:', 50, 100)
-            ->addRule(NForm::FILLED, 'Titulek musí být vyplněn.');
+       $form->addText('title', 'Title:', 50, 100)
+            ->addRule($form::FILLED, 'Title must be filled.');
      }
 
-     $form->addTextArea('topic', 'Komentář:', 87, 5)
-          ->addRule(NForm::FILLED, 'Komentář musí být vyplněn.');
+     $form->addTextArea('topic', 'Comment:', 87, 5)
+          ->addRule($form::FILLED, 'Comment must be filled.');
 
-     $form->addProtection('Vypršel ochranný časový limit, odešlete prosím formulář ještě jednou.');
+     $form->addProtection('Security token did not match. Possible CSRF attack.');
 
-     $form->addSubmit('insert', 'Vložit');
-     $form->onSubmit[] = callback($this, 'forumFormSubmitted');
+     $form->addSubmit('insert', 'Insert');
+     $form->onSuccess[] = callback($this, 'forumFormSubmitted');
 
      return $form;
    }
 
    /**
-    * Formulář pro zobrazení seznamu názorů s checkboxy
+    * Form to show list of topics with checkboxes
     *
     * @access protected
-    * @return NAppForm
+    * @return Nette\Application\UI\Form
     * @since 1.0.0
     */
    protected function createComponentForumTopicsForm()
    {
-     $form = new NAppForm();
+     $form = new UI\Form();
 
      $form->setMethod('get');
 
@@ -159,22 +173,22 @@
      foreach ($this->forumThreads as $thread)
        $container->addCheckbox($thread->id_thread, $thread->title);
 
-     $form->addSubmit('show', 'Zobrazit vybrané');
+     $form->addSubmit('show', 'View selected');
 
      return $form;
    }
 
    /**
-    * Vložení názoru do diskuzního fóra
+    * Inserting a topic to a forum
     *
     * @access public
-    * @param NAppForm $form formulář
+    * @param Nette\Application\UI\Form $form formulář
     * @return void
     * @uses ForumControlModel::getTopic()
     * @uses ForumControlModel::insert()
     * @since 1.0.0
     */
-   public function forumFormSubmitted(NAppForm $form)
+   public function forumFormSubmitted(UI\Form $form)
    {
      try
      {
@@ -187,27 +201,27 @@
          if ($this->forumTopicId)
          {
            $replyTo = $this->model->getTopic($this->forumTopicId);
-           $values['title'] = (NString::startsWith($replyTo->title, 'Re: ')) ? $replyTo->title : 'Re: '.$replyTo->title;
+           $values['title'] = (\Nette\Utils\Strings::startsWith($replyTo->title, 'Re: ')) ? $replyTo->title : 'Re: '.$replyTo->title;
          }
 
-         $values['ip'] = NEnvironment::getHttpRequest()->getRemoteAddress();
+         $values['ip'] = $this->context->httpRequest->remoteAddress;
          $values['date_time'] = date('Y-m-d H:i:s');
 
          $this->model->insert($values, $this->forumTopicId);
 
-         $this->presenter->flashMessage('Váš názor byl úspěšně vložen.');
+         $this->presenter->flashMessage('Your topic has been successfully inserted.');
        }
      }
-     catch (DibiException $e)
+     catch (\DibiException $e)
      {
-       $this->presenter->flashMessage('Došlo k chybě při vkládání Vašeho názoru.', 'error');
+       $this->presenter->flashMessage('An error occured while adding your topic.', 'error');
      }
 
      $this->presenter->redirect($this->presenter->view);
    }
 
    /**
-    * Vytvoření šablony
+    * Creating a template
     *
     * @access protected
     * @throws ForumControlException
@@ -218,7 +232,7 @@
     * @uses ForumControlModel::timeAgoInWords()
     * @since 1.0.0
     */
-   protected function createTemplate()
+   protected function createTemplate($class = NULL)
    {
      $template = parent::createTemplate();
 
@@ -249,9 +263,9 @@
        $template->forumThreads = $this->forumThreads;
        $template->forumTopicsForm = $topicsForm;
 
-       $template->registerHelper('timeAgoInWords', 'ForumControlModel::timeAgoInWords');
+       $template->registerHelper('timeAgoInWords', 'Nette\Extras\ForumControl\ForumControlModel::timeAgoInWords');
      }
-     catch (DibiException $e)
+     catch (\DibiException $e)
      {
        throw new ForumControlException(self::EXCEPTION_MESSAGE);
      }
@@ -260,7 +274,7 @@
    }
 
    /**
-    * Renderování šablony
+    * Rendering template
     *
     * @access public
     * @throws ForumControlException
@@ -284,7 +298,7 @@
    }
 
    /**
-    * Kontrola existence názoru, na který se reaguje
+    * Exists topic to reply?
     *
     * @access protected
     * @throws ForumControlException
@@ -295,11 +309,11 @@
    protected function checkTopicId()
    {
      if ($this->forumTopicId && !$this->model->existsTopic($this->forumTopicId))
-       throw new ForumControlException('Došlo k chybě při pokusu o reakci na neexistující názor.');
+       throw new ForumControlException('An error occured while attempting to respond to non-existing topic.');
    }
 
    /**
-    * Nastavení parametrů fóra
+    * Sets forum params
     *
     * @access private
     * @return void

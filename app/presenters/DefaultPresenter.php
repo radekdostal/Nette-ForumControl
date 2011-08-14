@@ -1,12 +1,26 @@
 <?php
+ /**
+  * Default presenter
+  *
+  * @package   Nette\Extras\ForumControl
+  * @example   http://addons.nette.org/forumcontrol
+  * @version   $Id: DefaultPresenter.php,v 1.1.0 2011/08/13 21:16:02 dostal Exp $
+  * @author    Ing. Radek Dostál <radek.dostal@gmail.com>
+  * @copyright Copyright (c) 2011 Radek Dostál
+  * @license   GNU Lesser General Public License
+  * @link      http://www.radekdostal.cz
+  */
+
+ use Nette\Extras\ForumControl;
+
  class DefaultPresenter extends BasePresenter
  {
    /**
-    * Diskuzní fórum
+    * Discussion forum
     *
     * @access public
-    * @param int $id ID vlákna na které se reaguje (0 = nový názor)
-    * @param int $id2 příznak pro zobrazení všech příspěvků (hodnota 1)
+    * @param int $id topic ID to reply (0 = new topic)
+    * @param int $id2 show all topics? (1 = yes)
     * @return void
     */
    public function renderDefault($id, $id2)
@@ -15,7 +29,6 @@
 
      try
      {
-       // Tento způsob je kvůli zpracování výjimek v presenteru, jinak by se musely zachytávat až v šabloně
        ob_start();
        $this['forumControl']->render();
        $this->template->forumControl = ob_get_clean();
@@ -28,24 +41,24 @@
    }
 
    /**
-    * Komponenta diskuzního fóra
+    * Forum Control component
     *
     * @access protected
     * @return ForumControl
     */
    protected function createComponentForumControl()
    {
-     // 1 = ID diskuzního fóra z tabulky forum
-     $model = new ForumControlModel(1, NEnvironment::getConfig('database'));
+     // 1 = forum ID from table "forum"
+     $model = new ForumControl\ForumControlModel(1, new \DibiConnection($this->context->params['database']));
 
-     // Mapování parametrů
+     // Params mapping
      $params = array(
        'topicId' => 'id',
        'allTopics' => 'id2',
        'selectedTopicsIds' => 'o'
      );
 
-     return new ForumControl($model, $params);
+     return new ForumControl\ForumControl($this->context, $model, $params);
    }
  }
 ?>

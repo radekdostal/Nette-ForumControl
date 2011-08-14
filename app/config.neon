@@ -5,10 +5,10 @@ common:
     # zlib.output_compression: yes
     # default_charset: "UTF-8"
 
-  service:
-    Nette\Loaders\RobotLoader:
+  services:
+    robotLoader:
       option:
-        directory: [%appDir%, %libsDir%/dibi, %libsDir%/Nette/components]
+        directory: [%appDir%, %libsDir%/dibi, %libsDir%/Nette/Extras]
       run: TRUE
 
 production < common:
@@ -23,4 +23,7 @@ production < common:
 
 development < production:
   database:
+    host: localhost
+    username: root
+    password:
     profiler: TRUE
