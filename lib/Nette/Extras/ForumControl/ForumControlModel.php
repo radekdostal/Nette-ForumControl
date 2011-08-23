@@ -3,7 +3,7 @@
   * Forum Control Model
   *
   * @package   Nette\Extras\ForumControl
-  * @version   $Id: ForumControlModel.php,v 1.1.0 2011/08/12 17:42:06 dostal Exp $
+  * @version   $Id: ForumControlModel.php,v 1.2.0 2011/08/23 12:28:42 dostal Exp $
   * @author    Ing. Radek Dostál <radek.dostal@gmail.com>
   * @copyright Copyright (c) 2011 Radek Dostál
   * @license   GNU Lesser General Public License
@@ -158,15 +158,15 @@
     * Inserts topic
     *
     * @access public
-    * @param array $data data
+    * @param \Nette\ArrayHash $data data
     * @param int $topicId topic ID to reply
     * @return void
     * @uses getTopic()
     * @since 1.0.0
     */
-   public function insert(array $data, $topicId)
+   public function insert(\Nette\ArrayHash $data, $topicId)
    {
-     $data['id_forum'] = $this->forumId;
+     $data->id_forum = $this->forumId;
 
      $this->connection->query('LOCK TABLES ['.$this->tThreads.'] WRITE');
 
@@ -208,8 +208,8 @@
                               ->fetch();
      }
 
-     $data['sequence'] = $re->new_sequence + 1;
-     $data['depth'] = $re->new_depth;
+     $data->sequence = $re->new_sequence + 1;
+     $data->depth = $re->new_depth;
 
      $this->connection->insert($this->tThreads, $data)->execute();
      $this->connection->query('UNLOCK TABLES');

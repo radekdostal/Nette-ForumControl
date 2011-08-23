@@ -4,7 +4,7 @@
   *
   * @package   Nette\Extras\ForumControl
   * @example   http://addons.nette.org/forumcontrol
-  * @version   $Id: DefaultPresenter.php,v 1.1.0 2011/08/13 21:16:02 dostal Exp $
+  * @version   $Id: DefaultPresenter.php,v 1.2.0 2011/08/23 12:11:42 dostal Exp $
   * @author    Ing. Radek Dostál <radek.dostal@gmail.com>
   * @copyright Copyright (c) 2011 Radek Dostál
   * @license   GNU Lesser General Public License
@@ -22,22 +22,10 @@
     * @param int $id topic ID to reply (0 = new topic)
     * @param int $id2 show all topics? (1 = yes)
     * @return void
+    * @since 1.0.0
     */
-   public function renderDefault($id, $id2)
+   public function actionDefault($id, $id2)
    {
-     $this->template->dataOk = TRUE;
-
-     try
-     {
-       ob_start();
-       $this['forumControl']->render();
-       $this->template->forumControl = ob_get_clean();
-     }
-     catch (ForumControlException $e)
-     {
-       $this->presenter->flashMessage($e->getMessage(), 'error');
-       $this->template->dataOk = FALSE;
-     }
    }
 
    /**
@@ -45,17 +33,18 @@
     *
     * @access protected
     * @return ForumControl
+    * @since 1.0.0
     */
    protected function createComponentForumControl()
    {
-     // 1 = forum ID from table "forum"
-     $model = new ForumControl\ForumControlModel(1, new \DibiConnection($this->context->params['database']));
+     $forumId = 1; // 1 = forum ID from table "forum"
+     $model = new ForumControl\ForumControlModel($forumId, new \DibiConnection($this->context->params['database']));
 
      // Params mapping
      $params = array(
-       'topicId' => 'id',
-       'allTopics' => 'id2',
-       'selectedTopicsIds' => 'o'
+       'topicId' => $this->getParam('id'),
+       'allTopics' => $this->getParam('id2'),
+       'selectedTopicsIds' => array('name' => 'o', 'value' => $this->getParam('o'))
      );
 
      return new ForumControl\ForumControl($this->context, $model, $params);

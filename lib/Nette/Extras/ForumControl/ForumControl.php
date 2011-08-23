@@ -4,7 +4,7 @@
   *
   * @package   Nette\Extras\ForumControl
   * @example   http://addons.nette.org/forumcontrol
-  * @version   $Id: ForumControl.php,v 1.1.0 2011/08/14 08:36:22 dostal Exp $
+  * @version   $Id: ForumControl.php,v 1.2.0 2011/08/23 12:27:44 dostal Exp $
   * @author    Ing. Radek Dostál <radek.dostal@gmail.com>
   * @copyright Copyright (c) 2011 Radek Dostál
   * @license   GNU Lesser General Public License
@@ -17,23 +17,14 @@
 
  class ForumControl extends UI\Control
  {
-   /**#@+
-    * Alerts
-    *
-    * @ignore
-    * @since 1.0.0
-    */
-   const EXCEPTION_MESSAGE = 'An error occurred while discussion forum initialization.';
-   /**#@- */
-
    /**
     * Global container
     *
-    * @access private
+    * @access protected
     * @var Nette\DI\Container
     * @since 1.0.0
     */
-   private $context;
+   protected $context;
 
    /**
     * Instance of model
@@ -43,15 +34,6 @@
     * @since 1.0.0
     */
    protected $model;
-
-   /**
-    * Params for mapping user params to forum params
-    *
-    * @access protected
-    * @var array
-    * @since 1.0.0
-    */
-   protected $forumParams;
 
    /**
     * Threads with topics
@@ -81,6 +63,15 @@
    protected $forumAllTopics;
 
    /**
+    * Name of container of selected topics
+    *
+    * @access protected
+    * @var string
+    * @since 1.2.0
+    */
+   protected $forumSelectedTopicsContainer;
+
+   /**
     * Topic ID's to show
     *
     * @access protected
@@ -96,7 +87,6 @@
     * @param Nette\DI\Container $context global context
     * @param IForumControlModel $model instance of model
     * @param array $params forum params
-    * @throws ForumControlException
     * @return void
     * @uses ForumControlModel::getThreads()
     * @since 1.0.0
@@ -107,30 +97,24 @@
 
      $this->context = $context;
      $this->model = $model;
-     $this->forumParams = $params;
 
-     try
-     {
-       $this->forumThreads = $this->model->getThreads();
-     }
-     catch (\DibiException $e)
-     {
-       throw new ForumControlException(self::EXCEPTION_MESSAGE);
-     }
+     $this->forumTopicId = $params['topicId'];
+     $this->forumAllTopics = (bool) $params['allTopics'];
+     $this->forumSelectedTopicsIds = $params['selectedTopicsIds']['value'];
+     $this->forumSelectedTopicsContainer = $params['selectedTopicsIds']['name'];
+
+     $this->forumThreads = $this->model->getThreads();
    }
 
    /**
-    * Form to add topic
+    * Form to add a topic
     *
     * @access protected
     * @return Nette\Application\UI\Form
-    * @uses setForumParams()
     * @since 1.0.0
     */
    protected function createComponentForumForm()
    {
-     $this->setForumParams();
-
      $form = new UI\Form();
 
      $form->addGroup(!$this->forumTopicId ? 'Topic' : 'Reply to topic');
@@ -168,7 +152,7 @@
 
      $form->setMethod('get');
 
-     $container = $form->addContainer($this->forumParams['selectedTopicsIds']);
+     $container = $form->addContainer($this->forumSelectedTopicsContainer);
 
      foreach ($this->forumThreads as $thread)
        $container->addCheckbox($thread->id_thread, $thread->title);
@@ -194,18 +178,18 @@
      {
        if ($form['insert']->isSubmittedBy())
        {
-         $values = (array) $form->values;
+         $values = $form->values;
 
-         setcookie('forumControl-name', $values['name'], strtotime('+1 month'));
+         $this->context->httpResponse->setCookie('Nette-ForumControl-Name', $values->name, strtotime('+1 month'));
 
          if ($this->forumTopicId)
          {
            $replyTo = $this->model->getTopic($this->forumTopicId);
-           $values['title'] = (\Nette\Utils\Strings::startsWith($replyTo->title, 'Re: ')) ? $replyTo->title : 'Re: '.$replyTo->title;
+           $values->title = (\Nette\Utils\Strings::startsWith($replyTo->title, 'Re: ')) ? $replyTo->title : 'Re: '.$replyTo->title;
          }
 
-         $values['ip'] = $this->context->httpRequest->remoteAddress;
-         $values['date_time'] = date('Y-m-d H:i:s');
+         $values->ip = $this->context->httpRequest->remoteAddress;
+         $values->date_time = date('Y-m-d H:i:s');
 
          $this->model->insert($values, $this->forumTopicId);
 
@@ -224,7 +208,6 @@
     * Creating a template
     *
     * @access protected
-    * @throws ForumControlException
     * @return ITemplate
     * @uses ForumControlModel::getCount()
     * @uses ForumControlModel::getTopic()
@@ -236,39 +219,36 @@
    {
      $template = parent::createTemplate();
 
+     if ($this->forumTopicId && !$this->model->existsTopic($this->forumTopicId))
+       $this->forumTopicId = NULL;
+
      $isNew = (bool) !$this->forumTopicId;
      $form = $this['forumForm'];
+     $cookie = $this->context->httpRequest->getCookie('Nette-ForumControl-Name');
 
-     if (!$form->isSubmitted() && isset($_COOKIE['forumControl-name']))
+     if (!$form->isSubmitted() && isset($cookie))
      {
        $form->setDefaults(array(
-         'name' => $_COOKIE['forumControl-name'])
+         'name' => $cookie)
        );
      }
 
      $topicsForm = $this['forumTopicsForm'];
      $topicsForm->setAction($this->presenter->link($this->presenter->view));
 
-     if ($this->presenter->getParam($this->forumParams['selectedTopicsIds']))
-       $topicsForm->setDefaults(array($this->forumParams['selectedTopicsIds'] => $this->presenter->getParam($this->forumParams['selectedTopicsIds'])));
+     if ($this->forumSelectedTopicsIds)
+       $topicsForm->setDefaults(array($this->forumSelectedTopicsContainer => $this->forumSelectedTopicsIds));
 
-     try
-     {
-       $template->forumTopicsCount = $this->model->getCount();
-       $template->forumReplyTo = (!$isNew) ? $this->model->getTopic($this->forumTopicId) : '';
-       $template->forumShowForm = ($this->forumTopicId !== NULL && $this->forumAllTopics === FALSE && !is_array($this->forumSelectedTopicsIds));
-       $template->forumShowAll = ($this->forumAllTopics === TRUE);
-       $template->forumSelectedTopics = (is_array($this->forumSelectedTopicsIds)) ? $this->model->getTopics(array_keys($this->forumSelectedTopicsIds)) : FALSE;
-       $template->forumSelectedTopicsIds = $this->forumParams['selectedTopicsIds'];
-       $template->forumThreads = $this->forumThreads;
-       $template->forumTopicsForm = $topicsForm;
+     $template->forumTopicsCount = $this->model->getCount();
+     $template->forumReplyTo = (!$isNew) ? $this->model->getTopic($this->forumTopicId) : '';
+     $template->forumShowForm = ($this->forumTopicId !== NULL && $this->forumAllTopics === FALSE && !is_array($this->forumSelectedTopicsIds));
+     $template->forumShowAll = ($this->forumAllTopics === TRUE);
+     $template->forumSelectedTopics = (is_array($this->forumSelectedTopicsIds)) ? $this->model->getTopics(array_keys($this->forumSelectedTopicsIds)) : FALSE;
+     $template->forumSelectedTopicsContainer = $this->forumSelectedTopicsContainer;
+     $template->forumThreads = $this->forumThreads;
+     $template->forumTopicsForm = $topicsForm;
 
-       $template->registerHelper('timeAgoInWords', 'Nette\Extras\ForumControl\ForumControlModel::timeAgoInWords');
-     }
-     catch (\DibiException $e)
-     {
-       throw new ForumControlException(self::EXCEPTION_MESSAGE);
-     }
+     $template->registerHelper('timeAgoInWords', 'Nette\Extras\ForumControl\ForumControlModel::timeAgoInWords');
 
      return $template;
    }
@@ -277,56 +257,13 @@
     * Rendering template
     *
     * @access public
-    * @throws ForumControlException
     * @return void
-    * @uses setForumParams()
     * @since 1.0.0
     */
    public function render()
    {
-     $this->setForumParams();
-
-     try
-     {
-       $this->template->setFile(dirname(__FILE__).'/ForumFormControl.latte');
-       $this->template->render();
-     }
-     catch (ForumControlException $e)
-     {
-       throw new ForumControlException($e->getMessage());
-     }
-   }
-
-   /**
-    * Exists topic to reply?
-    *
-    * @access protected
-    * @throws ForumControlException
-    * @return void
-    * @uses ForumControlModel::existsTopic()
-    * @since 1.0.0
-    */
-   protected function checkTopicId()
-   {
-     if ($this->forumTopicId && !$this->model->existsTopic($this->forumTopicId))
-       throw new ForumControlException('An error occured while attempting to respond to non-existing topic.');
-   }
-
-   /**
-    * Sets forum params
-    *
-    * @access private
-    * @return void
-    * @uses checkTopicId()
-    * @since 1.0.0
-    */
-   private function setForumParams()
-   {
-     $this->forumTopicId = $this->presenter->getParam($this->forumParams['topicId']);
-     $this->forumAllTopics = (bool) $this->presenter->getParam($this->forumParams['allTopics']);
-     $this->forumSelectedTopicsIds = $this->presenter->getParam($this->forumParams['selectedTopicsIds']);
-
-     $this->checkTopicId();
+     $this->template->setFile(__DIR__.'/ForumFormControl.latte');
+     $this->template->render();
    }
  }
 ?>
